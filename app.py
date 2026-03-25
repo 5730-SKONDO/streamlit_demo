@@ -1,14 +1,26 @@
 import streamlit as st
-import pandas as pd
-import numpy as np
+import requests
+from datetime import datetime, timezone
 
-st.title("最小デモアプリ")
+st.title("気温デモ（ステップ②）")
 
-st.write("ダミーデータの表示")
+# UTC時刻
+now_utc = datetime.now(timezone.utc)
 
-data = pd.DataFrame(
-    np.random.randn(20,3),
-    columns=["A","B","C"]
-)
+# ダミー座標（東京）
+lat = 35.68
+lon = 139.76
 
-st.line_chart(data)
+# API（UTC指定）
+url = f"https://api.open-meteo.com/v1/forecast?latitude={lat}&longitude={lon}&current_weather=true&timezone=UTC"
+
+response = requests.get(url)
+data = response.json()
+
+temp = data["current_weather"]["temperature"]
+api_time = data["current_weather"]["time"]
+
+# 表示
+st.metric("気温", f"{temp} ℃")
+st.write("取得時刻（UTC）:", now_utc.strftime("%Y-%m-%d %H:%M:%S"))
+st.write("気温データ時刻（UTC）:", api_time)
