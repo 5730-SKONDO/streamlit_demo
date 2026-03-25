@@ -19,7 +19,7 @@ result = st_javascript("""
                     time: now.toLocaleString()
                 });
             }, function(err){
-                resolve({error: err.message});
+                resolve({error: err.message + " (code: " + err.code + ")"});
             });
         }
     });
