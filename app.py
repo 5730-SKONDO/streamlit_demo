@@ -2,22 +2,19 @@ import streamlit as st
 import requests
 import streamlit.components.v1 as components
 
-st.title("スマホGPS＋現地時間＋気温デモ")
+st.title("スマホGPS＋現地時間＋気温デモ（完全版）")
 
-# JSでスマホのGPSと現地時間を取得し、session_stateに渡す
+# JSでGPSと現地時間取得 → Pythonに返す
 gps_js = """
 <script>
 navigator.geolocation.getCurrentPosition(function(position) {
     const lat = position.coords.latitude;
     const lon = position.coords.longitude;
     const now = new Date();
-    
-    // hidden inputに値をセットしてPythonに渡す
-    const coords_input = document.getElementById('coords_input');
-    coords_input.value = `${lat},${lon}`;
-    coords_input.dispatchEvent(new Event('change'));
-
-    // 表示用
+    // Pythonに返す
+    const result = {lat: lat, lon: lon, time: now.toLocaleString()};
+    window.parent.postMessage(result, "*");
+    // 画面にも表示
     document.getElementById('display').innerHTML = `
         <p style="color:white; font-size:16px; line-height:1.5;">
             緯度: ${lat} <br>
@@ -27,29 +24,21 @@ navigator.geolocation.getCurrentPosition(function(position) {
     `;
 });
 </script>
-
 <div id="display"></div>
-<input type="hidden" id="coords_input">
 """
 
-components.html(gps_js, height=150)
+# Componentsで戻り値を受け取る
+gps_data = components.html(gps_js, height=150, scrolling=False)
 
-# Python側でsession_stateから緯度経度を取得
-if 'coords' not in st.session_state:
-    st.session_state['coords'] = None
-
-# hidden input連携用（ユーザーに見せない）
-coords_input = st.text_input("", key="coords", value=st.session_state['coords'], label_visibility="collapsed")
-if coords_input:
-    st.session_state['coords'] = coords_input
-
-# 緯度経度が入ったらAPI呼び出し
-if st.session_state['coords']:
-    lat, lon = map(float, st.session_state['coords'].split(","))
+# Python側で取得できたらAPI呼び出し
+if gps_data:
+    lat = gps_data.get("lat")
+    lon = gps_data.get("lon")
+    now = gps_data.get("time")
     url = f"https://api.open-meteo.com/v1/forecast?latitude={lat}&longitude={lon}&current_weather=true"
     response = requests.get(url)
     data = response.json()
     temp = data["current_weather"]["temperature"]
     
     st.metric("現在の気温", f"{temp} ℃")
-
+    st.write(f"取得時刻（現地時間）: {now}")
