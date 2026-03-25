@@ -2,7 +2,7 @@ import streamlit as st
 import requests
 from datetime import datetime, timezone
 
-st.title("気温デモ（ステップ②）")
+st.title("気温デモ（ステップ）")
 
 # UTC時刻
 now_utc = datetime.now(timezone.utc)
